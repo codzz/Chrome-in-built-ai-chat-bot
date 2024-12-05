@@ -74,6 +74,9 @@ https://github.com/user-attachments/assets/94612df4-926e-4e5b-8217-0fb085d730d8
 -   Even smarter answers
 -   Team collaboration features
 
+  ![chrome_Br8LLwLOY8](https://github.com/user-attachments/assets/a001bd39-3693-4957-8419-e772c2cd2db5)
+
+
 This simple, friendly tool makes working with PDFs easier than ever. Whether you're studying, working, or just need to understand a document better, the Chrome Inbuilt AI PDF Chat Assistant is like having a smart helper always ready to assist you.
 
 Video - https://youtu.be/SnK18K0Lhbc
