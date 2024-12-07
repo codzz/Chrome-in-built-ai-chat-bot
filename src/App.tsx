@@ -5,17 +5,20 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ChatInterface from './components/ChatInterface';
 import { Toaster } from 'react-hot-toast';
 import ChromeAINotification from './components/ChromeAINotification';
+import { AIChatService } from './services/aiService';
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [extractedText, setExtractedText] = useState('');
+  const [aiInitialized, setAiInitialized] = useState(false);
 
   const handleUpload = async (selectedFile: File) => {
     console.log('Starting file upload:', selectedFile.name);
     setLoading(true);
     setError('');
+    setAiInitialized(false);
 
     const formData = new FormData();
     formData.append('pdfFile', selectedFile);
@@ -37,6 +40,12 @@ function App() {
 
       setExtractedText(responseData.text);
       console.log('Text extraction successful');
+
+      // Initialize AI service and wait for it
+      const aiService = new AIChatService(responseData.text);
+      await aiService.waitForInitialization();
+      setAiInitialized(true);
+      
     } catch (err: any) {
       console.error('Upload Error:', err);
       setError(err.message || 'Failed to extract text from PDF');
@@ -61,6 +70,7 @@ function App() {
     setFile(null);
     setExtractedText('');
     setError('');
+    setAiInitialized(false);
   };
 
   return (
@@ -138,7 +148,7 @@ function App() {
 
             {loading && <LoadingSpinner />}
 
-            {extractedText && !loading && (
+            {extractedText && !loading && aiInitialized && (
               <ChatInterface extractedText={extractedText} onRestart={handleRestart} />
             )}
           </div>
