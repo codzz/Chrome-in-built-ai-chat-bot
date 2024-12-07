@@ -20,10 +20,15 @@ declare const ai: AISession;
 export class AIChatService {
   private session: AILanguageModel | null = null;
   private messages: Message[] = [];
+  private initializationPromise: Promise<void>;
 
   constructor(extractedText: string) {
     console.log('Initializing AI Chat Service with extracted text length:', extractedText.length);
-    this.initializeSession(extractedText);
+    this.initializationPromise = this.initializeSession(extractedText);
+  }
+
+  async waitForInitialization() {
+    await this.initializationPromise;
   }
 
   private async initializeSession(extractedText: string) {
