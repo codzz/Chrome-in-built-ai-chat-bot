@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, UploadCloud, Copy, Check, Download, Trash2, Share2 } from 'lucide-react';
+import { Send, Bot, User, UploadCloud, Copy, Check, Download, Trash2, Share2, History, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AIChatService } from '../services/aiService';
@@ -8,6 +8,13 @@ import { ChatMessage } from '../types/chat';
 interface ChatInterfaceProps {
   extractedText: string;
   onRestart: () => void;
+}
+
+interface ChatSession {
+  id: string;
+  extractedText: string;
+  messages: ChatMessage[];
+  timestamp: string;
 }
 
 export default function ChatInterface({ extractedText, onRestart }: ChatInterfaceProps) {
@@ -21,6 +28,12 @@ export default function ChatInterface({ extractedText, onRestart }: ChatInterfac
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [aiService] = useState(() => new AIChatService(extractedText));
+  const [showHistory, setShowHistory] = useState(false);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
+    const saved = localStorage.getItem('chatSessions');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentSessionId] = useState(Date.now().toString());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -32,6 +45,22 @@ export default function ChatInterface({ extractedText, onRestart }: ChatInterfac
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Save current session whenever messages change
+    const currentSession: ChatSession = {
+      id: currentSessionId,
+      extractedText,
+      messages,
+      timestamp: new Date().toLocaleString()
+    };
+    
+    const updatedSessions = chatSessions.filter(session => session.id !== currentSessionId);
+    const newSessions = [currentSession, ...updatedSessions].slice(0, 10); // Keep last 10 sessions
+    
+    setChatSessions(newSessions);
+    localStorage.setItem('chatSessions', JSON.stringify(newSessions));
+  }, [messages, extractedText, currentSessionId]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -84,6 +113,19 @@ export default function ChatInterface({ extractedText, onRestart }: ChatInterfac
       console.error('Share failed:', err);
       handleCopyMessage(shareText, 'share');
     }
+  };
+
+  const loadChatSession = (session: ChatSession) => {
+    if (session.extractedText === extractedText) {
+      setMessages(session.messages);
+    } else {
+      // If extracted text is different, only load the last message as a new query
+      const lastUserMessage = session.messages.filter(m => m.type === 'user').pop();
+      if (lastUserMessage) {
+        setInput(lastUserMessage.content);
+      }
+    }
+    setShowHistory(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,6 +225,13 @@ export default function ChatInterface({ extractedText, onRestart }: ChatInterfac
               <Trash2 className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="p-2 text-dark-200 hover:text-blue-400 bg-dark-700 hover:bg-dark-600 rounded-xl transition-all duration-200 shadow-lg hover:shadow-blue-500/10"
+              title="Chat History"
+            >
+              <History className="w-4 h-4" />
+            </button>
+            <button
               onClick={onRestart}
               className="flex items-center gap-2 px-4 py-2.5 text-sm text-dark-200 hover:text-dark-50 bg-dark-700 hover:bg-dark-600 rounded-xl transition-all duration-200 ml-2 shadow-lg"
             >
@@ -192,6 +241,37 @@ export default function ChatInterface({ extractedText, onRestart }: ChatInterfac
           </div>
         </div>
       </div>
+
+      {showHistory && (
+        <div className="absolute right-4 top-16 w-72 max-h-96 overflow-y-auto bg-dark-800 rounded-lg shadow-xl border border-dark-700/50 z-50">
+          <div className="p-3 border-b border-dark-700/50">
+            <h3 className="text-sm font-medium text-blue-100">Chat History</h3>
+          </div>
+          <div className="divide-y divide-dark-700/50">
+            {chatSessions.length === 0 ? (
+              <div className="p-4 text-center text-dark-400 text-sm">
+                No chat history yet
+              </div>
+            ) : (
+              chatSessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => loadChatSession(session)}
+                  className="w-full p-3 text-left hover:bg-dark-700/30 transition-colors"
+                >
+                  <div className="text-sm text-blue-100 truncate">
+                    {session.messages[session.messages.length - 1]?.content || 'Empty chat'}
+                  </div>
+                  <div className="flex items-center mt-1 text-xs text-dark-400">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {session.timestamp}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <div 
         className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar relative bg-gradient-to-b from-dark-900/50 to-dark-800/50"
