@@ -1,5 +1,5 @@
 
-# Chrome Inbuilt AI PDF Chat Assistant - Your Smart PDF Companion
+# Chrome Built-in Al PDF Chat Assistant - Your Smart PDF Companion
 
 ## What is it?
 
